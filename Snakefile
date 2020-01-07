@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-IDS = "RHP7393 RHP7394".split()
+## IDS are organised in directories in the path detailed in os.listdir()
+IDS = os.listdir("PAX4_data/")
 print(IDS)
 
 rule all:
-    input: expand("test/temp/{id}_Aligned.out.bam", id=IDS)
+    input: expand("temp/{id}_Aligned.out.bam", id=IDS)
 
 
 rule test_wildcards:
@@ -29,30 +30,24 @@ rule test_wildcards:
 
         touch {output}
         """
-
+## Run STAR_PE with 6 threads per ID and with 32 threads in total (snakemake -j 32)
 rule STAR_PE:
-    # input:
-    #     # use a list for multiple fastq files for one sample
-    #     # usually technical replicates across lanes/flowcells
-    #     fq1 = ["reads/{sample}_R1.1.fastq", "reads/{sample}_R1.2.fastq"],
-    #     # paired end reads needs to be ordered so each item in the two lists match
-    #     fq2 = ["reads/{sample}_R2.1.fastq", "reads/{sample}_R2.2.fastq"] #optional
     output:
         # see STAR manual for additional output files
-        "test/temp/{id}_Aligned.out.bam"
+        "temp/{id}_Aligned.out.bam"
 
     message: "Executing two-pass STAR mapping"
     log:
-        "test/logs/{id}.log"
-    threads: 8
+        "logs/{id}.log"
+    threads: 6
     shell:
         """
-        # concatenate read 1
-        TEST=$(find test/{wildcards.id}/*_R1_001.fastq.gz)
+        # concatenate read 1. Look in the directory containing the samples
+        TEST=$(find PAX4_data/{wildcards.id}/*_R1_001.fastq.gz)
         R1=$(echo "${{TEST[*]}}" | paste -sd "," -)
 
-        # concatenate read 2
-        TEST=$(find test/{wildcards.id}/*_R2_001.fastq.gz)
+        # concatenate read 2. Look in the directory containing the samples
+        TEST=$(find PAX4_data/{wildcards.id}/*_R2_001.fastq.gz)
         R2=$(echo "${{TEST[*]}}" | paste -sd "," -)
 
         # join both
@@ -62,12 +57,12 @@ rule STAR_PE:
         ## STAR run
         #path to STAR
         /well/mccarthy/production/rna-seq/dependencies/bin/STAR \
-        --runThreadN 32 \
+        --runThreadN {threads} \
         --genomeDir /well/mccarthy/production/rna-seq/resources/RSEM_GRCh37 \
         --genomeLoad NoSharedMemory \
         --readFilesIn $PAIRS \
         --readFilesCommand zcat \
-        --outFileNamePrefix test/temp/{wildcards.id}_ \
+        --outFileNamePrefix temp/{wildcards.id}_ \
         --outMultimapperOrder Random \
         --outSAMtype BAM Unsorted \
         --outSAMattributes NH HI AS NM MD \
@@ -87,5 +82,24 @@ rule STAR_PE:
         --alignSJDBoverhangMin 1 \
         --sjdbScore 1 \
         --twopassMode Basic
+
+        """
+
+rule picard_deduplicate:
+    input: expand("temp/{id}_Aligned.out.bam", id=IDS)
+    output:
+        "bams/{id}.dedup.bam"
+
+    message: "Removing duplicates with PicardTools"
+    log:
+        "logs/{id}.log"
+    threads: 6
+    shell:
+        """
+        # Sort
+        samtools sort {input} temp/{wildcards.id}_Aligned.sorted.bam
+
+        ## remove duplicates
+        dependencies/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output}
 
         """
