@@ -4,7 +4,7 @@ IDS = "RHP7393 RHP7394".split()
 print(IDS)
 
 rule all:
-    input: expand("test/{id}/Aligned.out.sam", id=IDS)
+    input: expand("test/temp/{id}_Aligned.out.bam", id=IDS)
 
 
 rule test_wildcards:
@@ -39,7 +39,7 @@ rule STAR_PE:
     #     fq2 = ["reads/{sample}_R2.1.fastq", "reads/{sample}_R2.2.fastq"] #optional
     output:
         # see STAR manual for additional output files
-        "test/{id}/Aligned.out.sam"
+        "test/temp/{id}_Aligned.out.bam"
 
     message: "Executing two-pass STAR mapping"
     log:
@@ -62,12 +62,12 @@ rule STAR_PE:
         ## STAR run
         #path to STAR
         /well/mccarthy/production/rna-seq/dependencies/bin/STAR \
-        --runThreadN 6 \
+        --runThreadN 32 \
         --genomeDir /well/mccarthy/production/rna-seq/resources/RSEM_GRCh37 \
         --genomeLoad NoSharedMemory \
         --readFilesIn $PAIRS \
         --readFilesCommand zcat \
-        --outFileNamePrefix test/{wildcards.id}/temp \
+        --outFileNamePrefix test/temp/{wildcards.id}_ \
         --outMultimapperOrder Random \
         --outSAMtype BAM Unsorted \
         --outSAMattributes NH HI AS NM MD \
