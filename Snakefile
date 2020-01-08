@@ -117,8 +117,8 @@ rule counts_featureCounts:
     shell:
         """
         ## indexing for featureCounts
-        samtools index bam/SRR1027189.dedup.bam
+        samtools index {input}
 
-        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o counts/SRR1027171.gene.counts bam/SRR1027171.dedup.bam &> {log}
+        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
 
         """
