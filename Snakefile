@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 
 ## IDS are organised in directories in the path detailed in os.listdir()
 IDS = os.listdir("PAX4_data/")
@@ -38,7 +39,7 @@ rule STAR_PE:
 
     message: "Executing two-pass STAR mapping"
     log:
-        "logs/{id}.log"
+        "logs/{id}_map.log"
     threads: 6
     shell:
         """
@@ -81,18 +82,18 @@ rule STAR_PE:
         --alignSJoverhangMin 8 \
         --alignSJDBoverhangMin 1 \
         --sjdbScore 1 \
-        --twopassMode Basic
+        --twopassMode Basic &> {log}
 
         """
 
 rule picard_deduplicate:
-    input: expand("temp/{id}_Aligned.out.bam", id=IDS)
+    input: "temp/{id}_Aligned.out.bam"
     output:
         "bams/{id}.dedup.bam"
 
     message: "Removing duplicates with PicardTools"
     log:
-        "logs/{id}.log"
+        "logs/{id}_dedup.log"
     threads: 6
     shell:
         """
@@ -100,6 +101,24 @@ rule picard_deduplicate:
         samtools sort {input} temp/{wildcards.id}_Aligned.sorted.bam
 
         ## remove duplicates
-        dependencies/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output}
+        dependencies/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} &> {log}
+
+        """
+
+rule counts_featureCounts:
+    input: "bams/{id}.dedup.bam"
+    output:
+        "counts/{id}.gene.counts"
+
+    message: "Calculate raw counts per gene with featureCounts."
+    log:
+        "logs/{id}_featureCounts.log"
+    threads: 6
+    shell:
+        """
+        ## indexing for featureCounts
+        samtools index bam/SRR1027189.dedup.bam
+
+        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o counts/SRR1027171.gene.counts bam/SRR1027171.dedup.bam &> {log}
 
         """
