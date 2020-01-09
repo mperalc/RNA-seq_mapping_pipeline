@@ -31,7 +31,7 @@ rule test_wildcards:
 
         touch {output}
         """
-## Run STAR_PE with 6 threads per ID and with 32 threads in total (snakemake -j 32)
+## Run STAR_PE with 6 threads per ID and with 36 threads in total (snakemake -j 36)
 rule STAR_PE:
     output:
         # see STAR manual for additional output files
@@ -108,7 +108,7 @@ rule picard_deduplicate:
 rule counts_featureCounts:
     input: "bams/{id}.dedup.bam"
     output:
-        "counts/{id}.gene.counts"
+        "featureCounts/{id}.gene.counts"
 
     message: "Calculate raw counts per gene with featureCounts."
     log:
@@ -118,6 +118,24 @@ rule counts_featureCounts:
         """
         ## indexing for featureCounts
         samtools index {input}
+
+        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
+
+        """
+
+rule tidy_counts_TPM:
+    input: "featureCounts/{id}.gene.counts"
+    output:
+        "counts/{id}.gene.counts.tsv"
+
+    message: "Create transcript per million (TPM) count table. Also produces tidy raw count table for downstream analyses and QC plots."
+    log:
+        "logs/{id}_tidy.log"
+    threads: 6
+    shell:
+        """
+        ## running perl script
+        perl TPM_qc.pl –data  –genome GRCh37
 
         dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
 
