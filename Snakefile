@@ -37,12 +37,18 @@ rule STAR_PE:
         # see STAR manual for additional output files
         "temp/{id}_Aligned.out.bam"
 
-    message: "Executing two-pass STAR mapping"
+    message: "Executing two-pass STAR mapping. Run on cluster with snakemake  --jobs 32 --cluster [comma] qsub {params.environment} {params.project} {params.queue} {params.name}[comma]"
     log:
         "logs/{id}_map.log"
     threads: 6
+    params:
+        environment= "-cwd -V -pe shmem 6",
+        project= "-P mccarthy.prjc",
+        queue="-q long.qc",
+        name= "-N STAR_PE"
     shell:
         """
+
         # concatenate read 1. Look in the directory containing the samples
         TEST=$(find PAX4_data/{wildcards.id}/*_R1_001.fastq.gz)
         R1=$(echo "${{TEST[*]}}" | paste -sd "," -)
@@ -85,6 +91,8 @@ rule STAR_PE:
         --twopassMode Basic &> {log}
 
         """
+
+
 
 rule picard_deduplicate:
     input: "temp/{id}_Aligned.out.bam"
