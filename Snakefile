@@ -125,8 +125,6 @@ rule tidy_counts_TPM:
     shell:
         """
         ## running perl script
-        perl TPM_qc.pl –data  –genome GRCh37
-
-        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
+        perl TPM_qc.pl –data  –genome GRCh37 &> {log}
 
         """
