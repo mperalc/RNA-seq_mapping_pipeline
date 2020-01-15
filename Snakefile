@@ -88,10 +88,10 @@ rule picard_deduplicate:
     shell:
         """
         # Sort
-        samtools sort {input} temp/{wildcards.id}_Aligned.sorted.bam
+        samtools sort {input} -o temp/{wildcards.id}_Aligned.sorted.bam &> {log}
 
         ## remove duplicates
-        dependencies/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} &> {log}
+        dependencies/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} &>> {log}
 
         """
 
