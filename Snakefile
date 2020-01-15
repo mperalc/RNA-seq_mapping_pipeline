@@ -6,31 +6,9 @@ IDS = os.listdir("PAX4_data/")
 print(IDS)
 
 rule all:
-    input: expand("temp/{id}_Aligned.out.bam", id=IDS)
+    input: expand("bams/{id}.dedup.bam", id=IDS)
 
 
-rule test_wildcards:
-    output: "test/{id}/{id}_output.tsv"
-    shell:
-        """
-        printf '%s\n' test/{wildcards.id}/*_R1_001.fastq.gz  ##verify path, it's very important
-        # concatenate read 1
-        TEST=$(find test/{wildcards.id}/*_R1_001.fastq.gz)
-        R1=$(echo "${{TEST[*]}}" | paste -sd "," -)
-        echo $R1
-
-        # concatenate read 2
-        TEST=$(find test/{wildcards.id}/*_R2_001.fastq.gz)
-        R2=$(echo "${{TEST[*]}}" | paste -sd "," -)
-        echo $R2
-
-        # join both
-        PAIRS="$R1 $R2"
-        echo $PAIRS
-        echo $PAIRS > test/test.txt
-
-        touch {output}
-        """
 ## Run STAR_PE with 6 threads per ID and with 36 threads in total (snakemake -j 36)
 rule STAR_PE:
     output:
@@ -90,6 +68,10 @@ rule STAR_PE:
         --sjdbScore 1 \
         --twopassMode Basic &> {log}
 
+        ## cleanup
+        rm STAR_PE.e*
+        rm STAR_PE.o*
+
         """
 
 
@@ -99,7 +81,7 @@ rule picard_deduplicate:
     output:
         "bams/{id}.dedup.bam"
 
-    message: "Removing duplicates with PicardTools"
+    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 1 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q long.qc -N picard [comma]"
     log:
         "logs/{id}_dedup.log"
     threads: 6
