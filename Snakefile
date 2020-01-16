@@ -6,7 +6,7 @@ IDS = os.listdir("PAX4_data/")
 print(IDS)
 
 rule all:
-    input: expand("bams/{id}.dedup.bam", id=IDS)
+    input: expand("featureCounts/{id}.gene.counts", id=IDS)
 
 
 ## Run STAR_PE with 6 threads per ID and with 36 threads in total (snakemake -j 36)
@@ -81,7 +81,7 @@ rule picard_deduplicate:
     output:
         "bams/{id}.dedup.bam"
 
-    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q long.qc -N picard [comma]"
+    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q short.qc -N picard [comma]"
     log:
         "logs/{id}_dedup.log"
     threads: 6
@@ -91,7 +91,7 @@ rule picard_deduplicate:
         samtools sort {input} -o temp/{wildcards.id}_Aligned.sorted.bam &> {log}
 
         ## remove duplicates
-        java -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} &>> {log}
+        java -Xmx4g -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} M=temp/{wildcards.id}_marked_dup_metrics.txt &>> {log}
 
         ## cleanup
         rm picard.e*
@@ -103,7 +103,7 @@ rule counts_featureCounts:
     output:
         "featureCounts/{id}.gene.counts"
 
-    message: "Calculate raw counts per gene with featureCounts."
+    message: "Calculate raw counts per gene with featureCounts. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q short.qc -N featurecounts [comma]"
     log:
         "logs/{id}_featureCounts.log"
     threads: 6
@@ -112,7 +112,7 @@ rule counts_featureCounts:
         ## indexing for featureCounts
         samtools index {input}
 
-        dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
+        /well/mccarthy/production/rna-seq/dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a /well/mccarthy/production/rna-seq/resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
 
         """
 
