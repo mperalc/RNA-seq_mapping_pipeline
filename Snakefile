@@ -83,7 +83,7 @@ rule picard_deduplicate:
         sort="temp/{id}_Aligned.sorted.bam",
         metrics="temp/{id}_marked_dup_metrics.txt"
 
-    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q short.qc -N picard [comma]"
+    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 8 -P mccarthy.prjc -q short.qc -N picard [comma]"
     log:
         "logs/{id}_dedup.log"
     shell:
@@ -92,7 +92,7 @@ rule picard_deduplicate:
         samtools sort {input} -o temp/{wildcards.id}_Aligned.sorted.bam &> {log}
 
         ## remove duplicates
-        java -Xmx6g -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I={output.sort} O={output.dedup} M={output.metrics} &>> {log}
+        java -Xmx10g -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I={output.sort} O={output.dedup} M={output.metrics} &>> {log}
 
         ## cleanup
 
