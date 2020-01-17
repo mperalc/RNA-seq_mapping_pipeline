@@ -79,23 +79,25 @@ rule STAR_PE:
 rule picard_deduplicate:
     input: "temp/{id}_Aligned.out.bam"
     output:
-        "bams/{id}.dedup.bam"
+        dedup="bams/{id}.dedup.bam",
+        sort="temp/{id}_Aligned.sorted.bam",
+        metrics="temp/{id}_marked_dup_metrics.txt"
 
     message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 6 -P mccarthy.prjc -q short.qc -N picard [comma]"
     log:
         "logs/{id}_dedup.log"
-    threads: 6
     shell:
         """
         # Sort
         samtools sort {input} -o temp/{wildcards.id}_Aligned.sorted.bam &> {log}
 
         ## remove duplicates
-        java -Xmx4g -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I=temp/{wildcards.id}_Aligned.sorted.bam O={output} M=temp/{wildcards.id}_marked_dup_metrics.txt &>> {log}
+        java -Xmx6g -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I={output.sort} O={output.dedup} M={output.metrics} &>> {log}
 
         ## cleanup
-        rm picard.e*
-        rm picard.o*
+
+        #rm picard.e*
+        #rm picard.o*
         """
 
 rule counts_featureCounts:
