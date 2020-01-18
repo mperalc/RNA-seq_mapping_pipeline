@@ -136,7 +136,11 @@ rule tidy_counts_TPM:
     threads: 6
     shell:
         """
-        module load R/3.2.2
+        # for latest R
+        export R_LIBS_USER="/well/mccarthy/users/martac/bin/R"
+
+        # R modules
+        export PATH="/apps/well/R/3.4.3/bin:$PATH"
         ## running perl script
         /apps/well/perl/5.16.3/bin/perl scripts/TPM_qc.pl --data ./ --genome GRCh37 --prefix jan_2020 &> {log}
 
