@@ -9,45 +9,34 @@ use strict;
 use Getopt::Long;
 use Time::Piece;
 
+
+
 ##default parameters
 my $project_dir = (); #data directory variable with default value (NULL)
 my $genome = "GRCh37"; #reference genome selection with default value (GRCh37) - can be "GRCh37"|"GRCh38"
+my $prefix = (); # prefix for output files with default value (NULL)
+
 #GRCh37 is with GENCODE v19
 #GRCh38 is with GENCODE v25
 
-GetOptions("data=s" => \$project_dir, "genome:s" => \$genome);
+GetOptions("data=s" => \$project_dir, "genome:s" => \$genome,  "prefix:s" => \$prefix);
 
 if(!($project_dir)){ die "No project directory specified - expect name of project directory in data"; }
 if($genome ne "GRCh37"){ die "wrong reference genome version specified - can be \"GRCh37\" or \"GRCh38\""; }
-my $gencode_file = " resources/gencode.v19.annotation.gtf"; #gene annotation file with GENCODE v19 set to default
-$project_dir = " data/$project_dir";
+my $gencode_file = "../../resources/gencode.v19.annotation.gtf"; #gene annotation file with GENCODE v19 set to default
 if(!(-e $project_dir)){ die "Project directory not found - check $project_dir exists"; }
 
 ##set flags for processing counts
 my $counts = 0;
-my $rsem = 0;
-my $salmon = 0;
 my $summary = 0;
-
-#set prefix for output files
-my $prefix = $project_dir;
-$prefix =~ s/.*\///;
-my $date = localtime->strftime('%d.%m.%Y');
-$prefix = "$project_dir\/$date.$prefix";
 
 print "Prefix: $prefix\n";
 
 #get input files
 my @count_files = glob("$project_dir/featureCounts/*.gene.counts"); #featureCounts gene counts
 my @sum_files = glob("$project_dir/featureCounts/*.gene.counts.summary"); #featureCounts summary files
-my @rsem_files = glob("$project_dir/merged/rsem/*/*.isoforms.results"); #mostly legacy if anyone runs RSEM again
-my @salmon_files = glob("$project_dir/merged/salmon/*/quant.sf"); #salmon transcript level quantifications
 #set counts to process if files are found
 if(scalar(@count_files) > 0){ $counts = 1; }
-#similar for the rsem files
-if(scalar(@rsem_files) > 0){ $rsem = 1; }
-#the salmon files
-if(scalar(@salmon_files) > 0){ $salmon = 1; }
 #and for the summary files
 if(scalar(@sum_files) > 0){ $summary = 1; }
 

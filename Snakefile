@@ -9,7 +9,7 @@ IDS = os.listdir("PAX4_data/")
 print(IDS)
 
 rule all:
-    input: expand("featureCounts/{id}.gene.counts", id=IDS)
+    input: "jan_2020.gene.counts.tsv"
 
 
 ## Run STAR_PE with 6 threads per ID and with 36 threads in total (snakemake -j 36)
@@ -121,20 +121,23 @@ rule counts_featureCounts:
 
         /well/mccarthy/production/rna-seq/dependencies/bin/featureCounts -p -t exon -g gene_id -s 0 -T 4 -B -C -a /well/mccarthy/production/rna-seq/resources/gencode.v19.annotation.gtf -o {output} {input} &> {log}
 
+        # featurecounts.e*
+        #  featurecounts.o*
         """
 
 rule tidy_counts_TPM:
-    input: "featureCounts/{id}.gene.counts"
+    input: expand("featureCounts/{id}.gene.counts",id=IDS)
     output:
-        "counts/{id}.gene.counts.tsv"
+        "jan_2020.gene.counts.tsv"
 
     message: "Create transcript per million (TPM) count table. Also produces tidy raw count table for downstream analyses and QC plots."
     log:
-        "logs/{id}_tidy.log"
+        "logs/tidy.log"
     threads: 6
     shell:
         """
+        module load R/3.2.2
         ## running perl script
-        perl TPM_qc.pl –data  –genome GRCh37 &> {log}
+        /apps/well/perl/5.16.3/bin/perl scripts/TPM_qc.pl --data ./ --genome GRCh37 --prefix jan_2020 &> {log}
 
         """
