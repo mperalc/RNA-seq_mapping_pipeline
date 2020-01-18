@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import os
 
+
+
+
 ## IDS are organised in directories in the path detailed in os.listdir()
 IDS = os.listdir("PAX4_data/")
 print(IDS)
@@ -75,6 +78,8 @@ rule STAR_PE:
         """
 
 
+## add to bashrc the following if picardtools runs out of memory
+#export _JAVA_OPTIONS="-Xms4g -Xmx4g -XX:ParallelGCThreads=1"
 
 rule picard_deduplicate:
     input: "temp/{id}_Aligned.out.bam"
@@ -83,7 +88,7 @@ rule picard_deduplicate:
         sort="temp/{id}_Aligned.sorted.bam",
         metrics="temp/{id}_marked_dup_metrics.txt"
 
-    message: "Removing duplicates with PicardTools. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 8 -P mccarthy.prjc -q short.qc -N picard [comma]"
+    message: "Removing duplicates with PicardTools. Make sure to give enough memory to java with export _JAVA_OPTIONS= [comma] -Xms4g -Xmx4g -XX:ParallelGCThreads=1 [comma]. Run on cluster with snakemake  --jobs 164 --cluster [comma] qsub -cwd -V -pe shmem 10 -P mccarthy.prjc -q short.qc -N picard [comma]"
     log:
         "logs/{id}_dedup.log"
     shell:
@@ -92,7 +97,7 @@ rule picard_deduplicate:
         samtools sort {input} -o temp/{wildcards.id}_Aligned.sorted.bam &> {log}
 
         ## remove duplicates
-        java -Xmx10g -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I={output.sort} O={output.dedup} M={output.metrics} &>> {log}
+        java -jar /well/mccarthy/users/martac/bin/picard-tools-2.1.1/picard.jar MarkDuplicates I={output.sort} O={output.dedup} M={output.metrics} &>> {log}
 
         ## cleanup
 
