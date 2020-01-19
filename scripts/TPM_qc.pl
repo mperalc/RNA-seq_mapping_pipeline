@@ -257,8 +257,9 @@ scale_fill_manual("",breaks=levels(stats[,1]),values=c("#ba4b85","#5d9046","#815
 theme_bw() +
 ylab("Read pairs (Million)") +
 xlab("") +
-theme( axis.text.x=element_text(angle=70, vjust=1, hjust=1) )
-ggsave("$prefix.qc.mapping.category.reads.png",p)
+theme( axis.text.x=element_text(angle=90, vjust=0.5, hjust=1) )
+ggsave("$prefix.qc.mapping.category.reads.png",p, width = 17.5, height = 4, units = "in", dpi = 400)
+
 
 #plot the final QC information
 qc <- read.table("$prefix.qc.info.tmp",sep="\\t",header=T,check.names=F)
